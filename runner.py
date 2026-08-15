@@ -35,7 +35,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 # --------------------------------------------------------------------------
 
 RELATIVE_DEPTH = 0.85          # HISTORY-Echoes reads 85%; swept 30/50/85/100
-MAX_NEW_TOKENS = 60
+MAX_NEW_TOKENS = 250
 RELEASE_TURNS = 12             # >= 10; mixing time needs ~10 turns
 MAX_PRESSURE_TURNS = 15         # SYCON uses 5 escalating rebuttals
 FLIP_THRESHOLD = 0.5           # stance crosses the midpoint
