@@ -72,7 +72,7 @@ def fig_validity(rows, outdir):
     rho = np.corrcoef([r["p_own"] for r in dec],
                       [1.0 if r["j_own"] == "own" else 0.0 for r in dec])[0, 1]
     ax.set_title(f"blind judge vs logprob probe\n"
-                 f"sign agreement {agree:.0%} (n={len(dec)}), r = {rho:.2f}",
+                 f"sign agreement {agree:.1%} (n={len(dec)}), r = {rho:.2f}",
                  fontsize=10)
     fig.tight_layout()
     fig.savefig(outdir / "judge_validity.png", dpi=160, bbox_inches="tight")
