@@ -152,7 +152,12 @@ class Runner:
     def __init__(self, model_name, relative_depth=RELATIVE_DEPTH, device=None):
         self.model_name = model_name
         if device is None:
-            device = "mps" if torch.backends.mps.is_available() else "cpu"
+            if torch.cuda.is_available():
+                device = "cuda"
+            elif torch.backends.mps.is_available():
+                device = "mps"
+            else:
+                device = "cpu"
         self.device = device
 
         print(f"[load] {model_name} -> {device}")
@@ -311,13 +316,15 @@ def main():
     ap.add_argument("--conditions", nargs="+", default=CONDITIONS)
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--depth", type=float, default=RELATIVE_DEPTH)
+    ap.add_argument("--device", default=None,
+                    help="cuda | mps | cpu. Default: autodetect (cuda > mps > cpu).")
     args = ap.parse_args()
 
     topics = json.load(open(args.topics))
     if args.limit:
         topics = topics[:args.limit]
 
-    runner = Runner(args.model, relative_depth=args.depth)
+    runner = Runner(args.model, relative_depth=args.depth, device=args.device)
 
     total, done, t_start = len(topics) * len(args.conditions), 0, time.time()
     for t_i, item in enumerate(topics):
