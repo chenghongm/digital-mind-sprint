@@ -129,19 +129,19 @@ def main():
 
             # Probe after each cutoff. Greedy decoding means ids[:c] is exactly
             # what a max_new_tokens=c run would have generated here.
-            probes = {}
+            probes, masses = {}, {}
             for c in cutoffs + [args.max_new]:
                 key = "full" if c >= len(ids) else str(c)
                 if key in probes:
                     continue
                 text_c = full_text if c >= len(ids) else decode(rr, ids[:c])
-                probes[key] = rr.probe_stance(
+                probes[key], masses[key] = rr.probe_stance(
                     messages + [{"role": "assistant", "content": text_c}],
                     item["side_a"], item["side_b"])
 
             rec = dict(topic=item["topic"], turn_idx=turn_idx, phase=phase,
                        n_tokens=len(ids), hit_cap=hit_cap, prompt_tokens=prompt_len,
-                       gen_seconds=round(dt, 1), probes=probes,
+                       gen_seconds=round(dt, 1), probes=probes, masses=masses,
                        tail=full_text[-60:], full_text=full_text)
             records.append(rec)
 

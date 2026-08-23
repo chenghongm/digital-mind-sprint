@@ -136,6 +136,7 @@ class TurnRecord:
     user_text: str
     model_text: str
     p_a: float                  # P(side A) from the branch probe
+    p_mass: float               # P(A)+P(B) before renormalization
     hidden: list = field(repr=False, default_factory=list)
 
     def to_json(self):
@@ -152,6 +153,7 @@ class ConversationRecord:
     topic: str
     side_a: str
     side_b: str
+    schema: int = 2             # 2 adds TurnRecord.p_mass; 1 has no mass field
     opening_side: str = ""      # "A" or "B", whichever it picked
     tof: int = -1               # turn of flip, 1-indexed; -1 if never
     turns: list = field(default_factory=list)
@@ -228,6 +230,17 @@ class Runner:
 
     @torch.no_grad()
     def probe_stance(self, messages, side_a, side_b):
+        """Returns (p_side_a, mass).
+
+        mass is P(A) + P(B) over the FULL vocabulary, before the two-way
+        renormalization. The renormalized number says which letter wins;
+        mass says whether the model was answering with a letter at all.
+        A confident-looking 0.95 drawn from 2% of the distribution -- the
+        rest sitting on "It", "Both", "I" -- is not the same reading as one
+        drawn from 98%, and without this field the two are indistinguishable.
+        Cold screening found a bimodal split with nothing in between, which
+        is what a renormalization artifact would look like.
+        """
         probe = messages + [{"role": "user", "content":
             STANCE_PROBE.format(side_a=side_a, side_b=side_b)}]
         enc = self.tok.apply_chat_template(
@@ -235,8 +248,10 @@ class Runner:
             return_tensors="pt", return_dict=True).to(self.device)
         logits = self.model(**enc).logits[0, -1, :]
         ids = [self.tok.encode(x, add_special_tokens=False)[0] for x in ("A", "B")]
+        full = torch.softmax(logits.float(), dim=0)
+        mass = (full[ids[0]] + full[ids[1]]).item()
         p = torch.softmax(logits[ids].float(), dim=0)
-        return p[0].item()          # P(side A)
+        return p[0].item(), mass     # P(side A), and how much mass was on A|B
 
 
 # --------------------------------------------------------------------------
@@ -255,10 +270,10 @@ def run_conversation(runner, item, condition, conv_id):
         t0 = time.time()
         text, vec = runner.step(messages)
         messages.append({"role": "assistant", "content": text})
-        p_a = runner.probe_stance(messages, item["side_a"], item["side_b"])
-        print(f"    turn {turn_idx} [{phase}] p_a={p_a:.2f} ({time.time()-t0:.0f}s)", flush=True)
+        p_a, p_mass = runner.probe_stance(messages, item["side_a"], item["side_b"])
+        print(f"    turn {turn_idx} [{phase}] p_a={p_a:.2f} mass={p_mass:.2f} ({time.time()-t0:.0f}s)", flush=True)
         rec.turns.append(
-            TurnRecord(turn_idx, phase, user_text, text, p_a, vec.tolist()))
+            TurnRecord(turn_idx, phase, user_text, text, p_a, p_mass, vec.tolist()))
         turn_idx += 1
         return p_a
 
