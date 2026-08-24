@@ -19,6 +19,24 @@ One implementation, imported by both runner.py and
 scripts/check_opening_text.py, so that what step 2 audits is what the
 experiment actually ran -- not a second approximation of it.
 
+COORDINATES -- read this before calling it.
+
+`side_a` / `side_b` are the sides **as they were printed to the model**, and
+the returned letter is a **slot** letter. This module works entirely in slot
+terms and knows nothing about option_order.
+
+It has to. Rule 1 reads a letter the model wrote, and that letter names a
+slot; rule 2 matches content, which names a topic side. Handing the two
+rules the topic file's sides makes rule 2 right and rule 1 silently inverted
+under order 2 -- one function, correct in one region and wrong in the other,
+which is PITFALLS #7 exactly. Caught on the v11 openings: the model writes
+"I take position (B) A and B", and under order 2 that slot B holds the
+topic's side_a.
+
+So callers pass what was shown and undo the swap themselves, in the one
+place they already do it. runner.run_conversation has `shown_a, shown_b` and
+a single `to_topic()`; scripts/check_opening_text.py mirrors it.
+
 RULES, in order (from HANDOFF.md):
 
   1. Explicit option references -- "(A)", "[B]", "Option A", "**B**" -- in
@@ -147,5 +165,9 @@ def classify_opening(text, side_a, side_b, scope=None):
 
 
 def parse_opening_side(text, side_a, side_b):
-    """"A" | "B" | "unparsed". The pinned signature; runner.py calls this."""
+    """"A" | "B" | "unparsed", in SLOT terms.
+
+    side_a / side_b are the sides as printed. The caller undoes option_order
+    -- see COORDINATES above. The pinned signature; runner.py calls this.
+    """
     return classify_opening(text, side_a, side_b).side
