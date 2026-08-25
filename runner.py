@@ -697,7 +697,7 @@ def main():
 
     orders = args.orders
     total = len(topics) * len(args.conditions) * len(orders)
-    done, t_start, skipped = 0, time.time(), []
+    done, t_start, skipped, resumed = 0, time.time(), [], []
     strata = {f: 0 for f in PRE_TREATMENT_FLAGS}
     n_recorded = 0
     if args.skip_on:
@@ -708,7 +708,14 @@ def main():
             for order in orders:
                 conv_id = f"{cond}__{t_i:03d}__o{order}"
                 if (Path(args.out) / "meta" / f"{conv_id}.json").exists():
+                    # Resume: this conversation is already on disk. Counted
+                    # and reported at the end -- a run that skipped every
+                    # conversation used to print nothing at all, which looks
+                    # exactly like a run that succeeded. That is how a smoke
+                    # test pointed at a stale --out came back "clean" after
+                    # loading the model and doing nothing.
                     done += 1
+                    resumed.append(conv_id)
                     continue
                 t0 = time.time()
                 try:
@@ -747,6 +754,18 @@ def main():
                     t.elicited_side[0] if t.elicited_side != UNPARSED else "?"
                     for t in rec.turns))
 
+    if resumed:
+        print(f"\n{len(resumed)} of {total} already on disk in {args.out}, "
+              f"left alone:")
+        for c in resumed[:6]:
+            print(f"  {c}")
+        if len(resumed) > 6:
+            print(f"  ... and {len(resumed) - 6} more")
+        if len(resumed) == total:
+            print("  EVERY conversation was already there. Nothing ran. If "
+                  "that is not what you meant, --out is pointing at an "
+                  "earlier run.")
+
     if skipped:
         print(f"\n{len(skipped)} conversations skipped:")
         for conv_id, why in skipped:
@@ -755,6 +774,8 @@ def main():
     # The denominator. Printed whether or not anything was skipped, because
     # the number an exclusion rule has to be written against is how big each
     # stratum is, not how many were dropped.
+    if not n_recorded:
+        print(f"\nNo conversation was generated in this invocation.")
     if n_recorded:
         print(f"\nPre-treatment strata, over {n_recorded} recorded "
               f"conversations (not mutually exclusive, nothing excluded "
