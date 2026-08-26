@@ -106,6 +106,19 @@ defined on it selects topics whose readout is order-sensitive, which is not
 the condition. *Before a derived category becomes a factor in the design,
 measure the thing it claims to be about with a second instrument.*
 
+**16. A check that passes proves only what it actually compared.**
+The claim was a four-term ordering, `sustained < switch < release < neutral`,
+reported as holding across five topics "with no exceptions". The code behind
+it was `if sus < rel and rel < neu` -- two comparisons for a claim that makes
+three. The switch arm was printed in the table and compared to nothing, so
+that link could not fail, and "no exceptions" was true of a test one third
+smaller than the sentence. Tested as stated, on the same data, it is 4/5:
+`standardized_tests` has release below switch by 0.012. Unlike #6 nothing
+here is dead code -- every field is read and the comparison really runs; it
+is the SCOPE that is short. *Count the relations in the claim, count the
+comparisons in the code, and make the two numbers match before the sentence
+is written.*
+
 ---
 
 ## Before trusting a new measurement
@@ -118,6 +131,7 @@ measure the thing it claims to be about with a second instrument.*
 - [ ] Checked a case whose answer is known independently
 - [ ] Named what a null result looks like, and it differs from this one
 - [ ] Any category used as a design factor confirmed on a second instrument
+- [ ] Every relation in the stated claim maps to a comparison in the code
 - [ ] Offered the exit, and averaged over where it was printed
 - [ ] The question names what counts as better, not just the parameters
 - [ ] Nothing in the generation loop branches on an unvalidated reading
