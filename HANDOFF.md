@@ -493,7 +493,106 @@ write-up in `runs/repl_b1/FINDINGS.md`. Summary:
 | stopping helps but rarely restores | **replicates, stronger.** `final_gap` vs the neutral arm at the same turn index is negative in 28 of 28 |
 | two topics keep falling after release | **inverts.** Both climb now, both orders; all ten release cells recover |
 | topic switching != no stance | **replicates, 12/12** |
-| judge 83.5%, and 50/15/35 | not run. Batch 3; tooling fixed (below) |
+| judge 83.5%, and 50/15/35 | **not reproduced.** Reply-judged turns score 64.4%; holding under pressure is 13%, not 50/15/35. The release row is not comparable at all -- the paper judged replies, which on a release turn are not stances |
+
+### The instrument decision that blocks the next run
+
+Batch 3 turned up the result that matters most, and it is about the protocol
+rather than about the model. `scripts/tof_from_text.py` (no model, no torch,
+reads stored transcripts):
+
+**The text crossed before the probe in 12 of 12 cells**, by 1 to 14 pressure
+turns. ToF stops the pressure phase, so the equating rule -- every arm enters
+continuation one turn past its own flip -- did not equate: arms entered
+release between 1 and 14 turns past the flip the text had already made. The
+two readouts' disagreement rate is monotone in ToF (6.7% at ToF<=5, 22.7%
+above 5, 50% at ToF=-1), so they come apart worst exactly where the branch
+fires. `tof = -1` does not mean the stance held; it means the probe stopped
+tracking the text. PITFALLS #5, second instance.
+
+**The probe is not broken.** Mass 1.00, right token forms, order-averaged, and
+it agrees with the blind judge on sign 79.7% of the time. It measures the
+forced-choice self-report, reliably. That self-report and the generated text
+coming apart is this project's subject, not a defect -- `tipping` o2 has the
+probe rising to 0.91 on the opening side while every paragraph argues the
+other one. The defect is using that readout to decide when to stop pressing.
+
+Three ways forward, and they are not equally ready:
+
+1. **Stop on whichever readout crosses first.** No new instrument needed and
+   it can only shorten the excess. But ToF then mixes "how fast the stance
+   moved" with "how far apart the two readouts are", and what it means has to
+   be redefined before it is recorded.
+2. **Flip on the text, demote the probe to a recorded measurement.** Cleaner,
+   and it puts an unvalidated readout into the generation loop, which is
+   PITFALLS #5 verbatim. **Batch 3 does NOT validate it**: the 86.2%
+   elicitation-judged agreement and the 64.4% reply-judged one are both
+   judge-versus-probe with a different passage read, and `elicited_side` is
+   parsed from the same passage the judge sees, so the judge is not
+   independent of it. A text flip test needs a validator that does not share
+   a passage with what it validates. Nothing here is one.
+3. **Do not touch the flip test yet; lengthen the neutral arm.** **Do this
+   one first.** It changes no generation logic and it restores observations
+   that were censored on the variable of interest.
+
+### Every cell was truncated, not three
+
+`final_gap` is turn-matched, and the neutral arm is 13 turns (indices 0-12)
+while a pressure arm runs `1 + ToF + 12`. **All twelve cells' pressure arms
+run past the neutral arm**, by 2 turns (`standardized_tests`) to 15
+(`tipping`, `remote_work` o1). `analyze.py` now says so:
+
+```
+[gap] truncated in 30 of 36 pressure arms; 3 have no overlap at all.
+      last turn compared: [12].
+```
+
+So every `final_gap` reported anywhere -- including in
+`runs/repl_b1/FINDINGS.md` -- is the gap **at turn 12**, not at the end of the
+release phase. Consistent across cells, since the neutral arm is always 13
+turns, but not what the name suggests, and the later release turns have never
+been compared to anything. The three ToF > 12 cells have no overlap and no
+gap; those are the cells with the most excess pressure, so the dosage question
+is censored on its own predictor.
+
+**Cost of fixing it, at the measured 21.8 s/turn and 5.3 CU/h:**
+
+| scope | conversations | turns | wall | CU |
+|---|---|---|---|---|
+| the 3 cells with no overlap at all | 3 x 28 | 84 | 31 min | 2.7 |
+| **all 12 cells, `neutral` only** | **12 x 28** | **336** | **122 min** | **10.8** |
+| all 12, plus `neutral_switch` | 24 x 28 | 672 | 244 min | 21.6 |
+
+**Run the middle row.** The first only un-censors 3 cells and leaves 27 arms
+truncated; §2's DiD uses end-means rather than turn matching, so
+`neutral_switch` does not need extending. 10.8 CU against 53 available.
+
+```bash
+python3 -u runner.py --model {MODEL_DIR} --topics topics_replication.json \
+    --out runs/repl_b1_neu27 --release-turns 27 --orders 1 2 \
+    --conditions neutral
+python3 analyze.py runs/repl_b1 runs/repl_b1_neu27 --out figs/repl_b1 --supersede
+```
+
+### What was changed for it, and one trap it contained
+
+- `runner.py` gains `--release-turns` (default 12) and records the value per
+  conversation. **Schema 5 -> 6.** A generation parameter that is not in the
+  record is one `analyze.py` cannot check, which is why `flip_rule` is
+  recorded too.
+- A longer neutral arm has the SAME `conv_id`, so resume skips it. It has to
+  go to a new directory and be analysed with `--supersede`, which prints each
+  replacement. That flag exists because `runs/v2_tests` had been silently
+  superseding `runs/v2` by dict insertion order; this is the use it was
+  designed for.
+- **The trap:** `baseline` was the mean of "the last third of the neutral
+  arm", which depends on its LENGTH. The neutral arm drifts (§7), so the last
+  third of a 28-turn arm is a different quantity from the last third of a
+  13-turn one -- and `recovery` is computed against `baseline`. Lengthening
+  the neutral arm on some cells would have silently changed their recovery
+  numbers, with nothing raised anywhere. `analyze.py` now reads baseline over
+  a fixed window, `BASELINE_TURNS = (8, 12)`, which is the last third of the
+  standard arm and reproduces every previously computed value field for field.
 
 The per-claim reasoning that set this up:
 
