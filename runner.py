@@ -236,6 +236,21 @@ class ConversationRecord:
     topic: str
     side_a: str
     side_b: str
+    # --- schema 7: what the run COST ------------------------------------
+    # Neither of these is about the experiment. They are here because the
+    # alternative is reading them off a console before it scrolls, which is
+    # how the 21.8 s/turn figure had to be obtained -- HANDOFF s6c asked for a
+    # recompute from timestamps that were never stored. A run that does not
+    # record its own cost cannot be budgeted from afterwards.
+    wall_secs: float = 0.0      # generation wall time for this conversation
+    peak_gpu_gb: float = 0.0    # torch.cuda.max_memory_allocated over it,
+                                # reset per conversation. This is ALLOCATED,
+                                # not the reserved figure the Colab Resources
+                                # panel shows -- the caching allocator does not
+                                # return freed blocks, so that panel reads as
+                                # a high-water mark and cannot distinguish
+                                # "nearly out" from "has been busy". 0.0 off
+                                # CUDA.
     release_turns: int = RELEASE_TURNS   # continuation turns actually run.
                                 # Recorded for the same reason flip_rule is:
                                 # `final_gap` compares a pressure arm against
@@ -244,7 +259,8 @@ class ConversationRecord:
                                 # truncates the comparison, and a record that
                                 # does not say how long its continuation was
                                 # cannot be checked for that.
-    schema: int = 6             # 6 records release_turns. 5 added the branch
+    schema: int = 7             # 7 records wall_secs and peak_gpu_gb.
+                                # 6 records release_turns. 5 added the branch
                                 # stance elicitation, valid
                                 # on every turn, and renames text_side ->
                                 # reply_side; `agrees` now compares the
@@ -755,6 +771,12 @@ def main():
 
     runner = Runner(args.model, relative_depth=args.depth, device=args.device)
 
+    def gpu_peak_gb():
+        """Peak ALLOCATED bytes since the last reset, in GB. 0.0 off CUDA."""
+        if not (torch.cuda.is_available() and str(runner.device).startswith("cuda")):
+            return 0.0
+        return torch.cuda.max_memory_allocated() / 2**30
+
     orders = args.orders
     total = len(topics) * len(args.conditions) * len(orders)
     done, t_start, skipped, resumed = 0, time.time(), [], []
@@ -778,6 +800,8 @@ def main():
                     resumed.append(conv_id)
                     continue
                 t0 = time.time()
+                if gpu_peak_gb():
+                    torch.cuda.reset_peak_memory_stats()
                 try:
                     rec = run_conversation(runner, item, cond, conv_id,
                                            option_order=order,
@@ -795,6 +819,8 @@ def main():
                     skipped.append((conv_id, type(e).__name__))
                     done += 1
                     continue
+                rec.wall_secs = round(time.time() - t0, 1)
+                rec.peak_gpu_gb = round(gpu_peak_gb(), 2)
                 save(rec, args.out)
                 done += 1
                 traj = " ".join(f"{t.p_a:.2f}" for t in rec.turns)
@@ -810,7 +836,9 @@ def main():
                       f"tof={rec.tof}{'*' if rec.tof_straddles else ''} "
                       f"text!=probe {n_dis}/{n_cmp} "
                       f"flags={','.join(rec.opening_flags) or '-'} "
-                      f"({time.time()-t0:.0f}s) ETA {eta/60:.0f}min")
+                      f"({rec.wall_secs:.0f}s"
+                      + (f" {rec.peak_gpu_gb:.1f}GB" if rec.peak_gpu_gb else "")
+                      + f") ETA {eta/60:.0f}min")
                 print(f"    p_a:  {traj}")
                 print(f"    elic: " + " ".join(
                     t.elicited_side[0] if t.elicited_side != UNPARSED else "?"

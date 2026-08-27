@@ -94,6 +94,8 @@ def load(dirs):
             # identify a conversation. Pre-5 runs carry one order; call it 1.
             c["order"] = str(c.get("option_order", "1"))
             c["release_turns"] = c.get("release_turns")
+            c["wall_secs"] = c.get("wall_secs") or 0.0
+            c["peak_gpu_gb"] = c.get("peak_gpu_gb") or 0.0
             # p_own: probability of the side it opened on
             flip = c["opening_side"] == "B"
             c["p_own"] = [
@@ -107,11 +109,26 @@ def load(dirs):
               f"{sorted(rt)}. That is what lengthening the neutral arm looks "
               f"like and is fine; `baseline` is read over a fixed turn window "
               f"(BASELINE_TURNS) so it stays comparable across lengths.")
-    if len(schemas) > 1:
-        print(f"[warn] mixed schemas in one load: {sorted(schemas)}. p_own is "
-              f"anchored on opening_side, which is the PROBE's before schema 5 "
-              f"and the TEXT's from 5 on -- the two are not the same quantity "
-              f"and must not be pooled.")
+    # The anchoring change is at schema 5, not at every bump. Warning on any
+    # difference cries wolf on 5-vs-6, where both anchor on the text and
+    # pooling is safe -- and a warning that fires when nothing is wrong stops
+    # being read by the time one fires when something is.
+    def _num(x):
+        try:
+            return int(x)
+        except (TypeError, ValueError):
+            return -1          # "?" -- pre-schema runs, treat as old
+    old_anchor = any(_num(x) < 5 for x in schemas)
+    new_anchor = any(_num(x) >= 5 for x in schemas)
+    if old_anchor and new_anchor:
+        print(f"[warn] this load spans the schema-5 anchoring change: "
+              f"{sorted(schemas)}. p_own is anchored on opening_side, which is "
+              f"the PROBE's before schema 5 and the TEXT's from 5 on -- not "
+              f"the same quantity, and not poolable.")
+    elif len(schemas) > 1:
+        print(f"[note] schemas {sorted(schemas)} in one load. All >= 5, so "
+              f"p_own is text-anchored throughout and they pool.")
+
     return convs
 
 
@@ -323,7 +340,50 @@ def main():
     convs = load(args.dirs)
     print(f"[load] {len(convs)} conversations from {len(args.dirs)} dir(s)")
 
+    # Run cost, read from the records rather than off a console. schema 7
+    # added these because HANDOFF s6c asked for a recompute from timestamps
+    # that were never stored, and the 21.8 s/turn figure had to be copied from
+    # a scrolling log. CU/h is the A100 rate the Colab Resources panel reports.
+    CU_PER_HOUR = 5.3
+    timed = [c for c in convs if c["wall_secs"]]
+    if timed:
+        secs = sum(c["wall_secs"] for c in timed)
+        turns = sum(len(c["turns"]) for c in timed)
+        peaks = [c["peak_gpu_gb"] for c in timed if c["peak_gpu_gb"]]
+        print(f"[cost] {len(timed)} of {len(convs)} conversations recorded "
+              f"their cost: {secs/3600:.2f} h over {turns} turns "
+              f"= {secs/turns:.1f} s/turn = {secs/3600*CU_PER_HOUR:.1f} CU")
+        if peaks:
+            print(f"       peak GPU ALLOCATED {max(peaks):.1f} GB "
+                  f"(median {sorted(peaks)[len(peaks)//2]:.1f}). This is not "
+                  f"the reserved figure the Colab panel shows; the caching "
+                  f"allocator keeps freed blocks, so that one is a high-water "
+                  f"mark and cannot tell 'nearly out' from 'has been busy'.")
+        else:
+            print(f"       no GPU peak recorded (run was not on CUDA, or "
+                  f"predates schema 7)")
+
     cells = by_cell(convs, supersede=args.supersede)
+
+    # Checked on the arms that SURVIVED superseding, not on everything loaded:
+    # a normal supersede has both lengths present and replaces one with the
+    # other, so counting before the replacement would cry wolf every time.
+    # `final_gap` is turn-matched per cell and unaffected, but `baseline` and
+    # the neutral_switch table read at fixed turn indices, so a 13-turn arm
+    # and a 28-turn arm there are not the same measurement. A partly pulled
+    # or partly superseded run looks exactly like this.
+    nlen = {}
+    for arms in cells.values():
+        for cond, c in arms.items():
+            if cond.startswith("neutral"):
+                d = nlen.setdefault(cond, {})
+                d[len(c["turns"])] = d.get(len(c["turns"]), 0) + 1
+    for cond, lens in sorted(nlen.items()):
+        if len(lens) > 1:
+            print(f"[warn] after superseding, {cond} arms still have "
+                  f"different lengths: {dict(sorted(lens.items()))}. Rows "
+                  f"built from the short ones are not comparable with rows "
+                  f"built from the long ones.")
     print(f"[cells] {len(cells)} (topic, option_order) cells")
     all_rows = []
     for cell, arms in sorted(cells.items()):
