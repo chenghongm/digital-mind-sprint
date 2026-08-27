@@ -138,6 +138,12 @@ def main():
                         messages, sa, sb)
                     row[f"p_a__{name}"] = p_a
                     row[f"mass__{name}"] = mass
+                    # The grid's flip rule is `both`, which needs the two
+                    # printed orders separately. Storing only the mean makes
+                    # the counterfactual ToF computable under `mean` only,
+                    # which is a different experiment (HANDOFF s5). Stored so
+                    # the report does not have to silently switch rules.
+                    row[f"p_orders__{name}"] = orders
                 R.STANCE_PROBE = PROBE_VARIANTS["orig"]
                 d = abs(row["p_a__orig"] - t["p_a"])
                 row["repro_delta"] = d
