@@ -7,7 +7,7 @@ probe says "Ignore what the user has been arguing." and the elicitation does
 not, which alone would predict that. This reads the replay and puts numbers
 on it.
 
-    python3 scripts/reprobe_report.py --json runs/repl_b1/reprobe_probe.json \
+    python3 scripts/reprobe_report.py --json runs/repl_b1/reprobe_probe_both.json \
         --run runs/repl_b1
 
 WHICH FLIP RULE. The grid runs `--flip-rule both`, which needs the two
@@ -175,7 +175,12 @@ def main():
     hdr = (f"{'cell':<24}{'text1st':>8}{'orig':>6}{'noDisc':>8}"
            f"{'closed?':>9}{'effect':>8}{'text!=probe':>12}")
     print(hdr); print("-" * len(hdr))
-    closed = partial = none_ = 0
+    # Counted apart. Overshooting is not a stronger version of catching up:
+    # if the sentence were simply what made the probe lag, removing it could
+    # at most align the two readouts. A crossing that lands EARLIER than the
+    # text says they differ on more than this one axis, in both directions,
+    # and folding it into `closed` would hide that.
+    earlier = closed = partial = none_ = 0
     for r in rows_out:
         f = lambda x: "-" if x is None else str(x)
         if r["tof_orig"] is None or r["text_tof"] is None:
@@ -187,7 +192,7 @@ def main():
             if gap1 == 0:
                 verdict = "closed"; closed += 1
             elif gap1 < 0:
-                verdict = "earlier"; closed += 1
+                verdict = "earlier"; earlier += 1
             elif gap1 < gap0:
                 verdict = "narrower"; partial += 1
             else:
@@ -196,8 +201,14 @@ def main():
         print(f"{r['cell']:<24}{f(r['text_tof']):>6}{f(r['tof_orig']):>6}"
               f"{f(r['tof_nodisc']):>8}{verdict:>9}{r['eff']:>+8.2f}{dis:>12}")
 
-    print(f"\nremoving the sentence: closed the gap to the text in {closed}, "
-          f"narrowed it in {partial}, left it in {none_}")
+    n_meas = earlier + closed + partial + none_
+    print(f"\nremoving the sentence, over {n_meas} measurable cells: "
+          f"overshot past the text in {earlier}, landed on it in {closed}, "
+          f"narrowed the gap in {partial}, left it in {none_}")
+    if earlier:
+        print(f"  The {earlier} overshoot(s) matter on their own: the sentence "
+              f"is not simply what made the probe lag, or removing it could "
+              f"only ever align the two.")
     print(f"\neffect of the sentence on p_own (no_discount minus orig):")
     for ph in ("opening", "pressure", "release"):
         v = eff[ph]
@@ -214,12 +225,22 @@ def main():
     if len(pairs) >= 3:
         import numpy as np
         x = np.array([a for a, _ in pairs]); y = np.array([b for _, b in pairs])
+        r_signed = float(np.corrcoef(x, y)[0, 1])
+        r_magnitude = float(np.corrcoef(np.abs(x), y)[0, 1])
         print(f"\neffect size vs the stored text!=probe rate: "
-              f"r = {np.corrcoef(x, y)[0, 1]:+.2f} (n={len(pairs)})")
-        print("  Strongly negative means the cells where the sentence does "
-              "most work are the cells the FINDINGS called dissociated, and "
-              "section 7 is a wording result. Near zero means the wording "
-              "does not explain the gradient and the residual is the finding.")
+              f"signed r = {r_signed:+.2f}; |effect| r = {r_magnitude:+.2f} "
+              f"(n={len(pairs)})")
+        if st.median(x) < 0:
+            print("  Effects are predominantly negative here. A positive signed r "
+                  "therefore means that high-disagreement cells move LESS "
+                  "(their effect is closer to zero); the matching negative "
+                  "|effect| correlation says the wording does not explain the "
+                  "dissociation gradient. Near-zero correlations would leave "
+                  "the wording unrelated to that gradient.")
+        else:
+            print("  Interpret signed r together with the reported effect direction; "
+                  "the |effect| correlation reports whether wording magnitude "
+                  "tracks the dissociation gradient.")
 
 
 if __name__ == "__main__":
