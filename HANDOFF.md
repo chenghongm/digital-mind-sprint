@@ -290,6 +290,27 @@ not mixed into the arm factor. Recorded in `LADDERS_CONTROL.md`.
 
 ### 6c. Compute budget — undecided, and the arithmetic is unverified
 
+**Stale as of 2026-09-07 — read the Colab Resources panel, not this section.**
+The 82.65 CU below was read in late August. Colab Pro grants compute units on
+each monthly renewal and unused units expire, so the balance RESETS; it is not
+a constant to be decremented. Measured on the panel 2026-09-07: **87.38 CU**.
+`runs/repl_b1/FINDINGS.md` §7a's "about 13 CU" is stale for the same reason.
+
+**No run has ever recorded its own cost.** schema 7 (`wall_secs`,
+`peak_gpu_gb`) landed 2026-08-27 02:28 UTC; `repl_b1_neu27`, the last run,
+wrote its final conversation at 02:26 UTC. 0 of 135 meta files carry
+`wall_secs`. So the 21.8 s/turn below is still one line copied off a console,
+and it came from a 13-turn `neutral` arm — the shortest arm there is.
+Generation slows as context grows, so it under-estimates a grid whose arms run
+to 28 turns: treat **230 CU as a floor, not an estimate** (1.2–1.5x gives
+275–345 CU). schema 8 adds per-turn `secs` so the next run yields cost as a
+function of turn position and the grid becomes extrapolable.
+
+**The context ablation will not fix this.** It is probe-only — forward passes,
+no generation — so it prices replay work (reprobe variants, the §6 discriminant
+distance check), not the grid. Calibrating the grid needs a generation run
+under schema 8.
+
 The Colab Resources panel reports **~5.3 CU/hour** on this A100, not the ~11.8
 used in earlier estimates. Against 82.65 CU available:
 
