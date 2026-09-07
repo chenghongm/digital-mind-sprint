@@ -419,7 +419,12 @@ def main():
             rows.append(row)
 
         json.dump({"conv_id": rec["conv_id"], "cell": cell,
-                   "method": args.method, "topic": rec["topic"],
+                   # which filler corpus produced this: the output FILENAME
+                   # does not carry it, and there is now more than one corpus
+                   # on disk. Without this field a v1 and a v2 result are
+                   # indistinguishable once they are out of their directory.
+                   "method": args.method, "fill_dir": args.fill,
+                   "topic": rec["topic"],
                    "condition": rec["condition"],
                    "order": int(rec.get("option_order", 1)),
                    "tof": rec.get("tof"), "fill_id": fid,
