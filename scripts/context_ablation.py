@@ -42,7 +42,7 @@ this experiment pays for. It is also, incidentally, the first run under
 schema 8, so it is where the s/turn-vs-context curve for the grid's budget
 comes from.
 
-    # once, ~3 CU, writes the fill corpus AND the timing data
+    # once, ~75 min / ~7 CU, writes the fill corpus AND the timing data
     python3 scripts/context_ablation.py --build-fill \
         --run runs/repl_b1 --model {MODEL_DIR} --fill runs/repl_b1/fill
 
