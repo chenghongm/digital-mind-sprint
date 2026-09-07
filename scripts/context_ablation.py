@@ -437,21 +437,57 @@ def main():
               flush=True)
 
     # --- what the run is allowed to claim ---------------------------------
-    if "A" in args.cells:
-        if repro_fail:
-            print(f"\n[FAIL] cell A did not reproduce the stored reading on "
-                  f"{len(repro_fail)} turns (tolerance {REPRO_TOL}):")
-            for cid, ti, d in repro_fail[:10]:
-                print(f"    {cid} t{ti} delta {d:.3f}")
-            print("Cell A changes nothing, so this is the replay being wrong, "
-                  "not a result. Nothing the other cells say means anything "
-                  "until it reproduces.")
-            raise SystemExit(1)
-        print(f"\n[ok] cell A reproduced every stored p_a and both printed "
-              f"orders within {REPRO_TOL}")
-    else:
-        print("\n[note] cell A was not run, so the replay has no baseline "
-              "check in this invocation. Run --cells A before reading B/C/D.")
+    # --- cell A: the replay's baseline, checked FROM DISK -----------------
+    # Read the stored files, not this invocation's in-memory repro_fail. On
+    # resume every cell A file can already exist, so `pending` holds no A
+    # jobs, nothing appends to repro_fail, and an empty list would print as
+    # "reproduced every stored p_a" -- a pass reported by a check that never
+    # ran. The guard has to hold ACROSS invocations, because the recommended
+    # way to run this is cell D first and A B C afterwards, and because any
+    # dropped session resumes into exactly this state.
+    a_ok, a_bad = set(), []
+    for f in sorted(outdir.glob(f"*__A__{args.method}.json")):
+        d = json.load(open(f))
+        deltas = [r["repro_delta"] for r in d["rows"] if "repro_delta" in r]
+        if not deltas:
+            a_bad.append((d["conv_id"], None))
+            continue
+        worst = max(deltas)
+        (a_bad.append((d["conv_id"], worst)) if worst > REPRO_TOL
+         else a_ok.add(d["conv_id"]))
+
+    others = {}
+    for f in sorted(outdir.glob(f"*__{args.method}.json")):
+        d = json.load(open(f))
+        if d["cell"] != "A":
+            others.setdefault(d["conv_id"], set()).add(d["cell"])
+    uncovered = sorted(set(others) - a_ok)
+
+    fatal = False
+    if a_bad:
+        fatal = True
+        print(f"\n[FAIL] cell A did not reproduce the stored reading in "
+              f"{len(a_bad)} conversation(s) (tolerance {REPRO_TOL}):")
+        for cid, worst in a_bad[:10]:
+            print(f"    {cid} worst delta "
+                  + ("no repro_delta recorded" if worst is None
+                     else f"{worst:.3f}"))
+        print("Cell A changes nothing, so this is the replay being wrong, "
+              "not a result. Nothing the other cells say means anything "
+              "until it reproduces.")
+    elif a_ok:
+        print(f"\n[ok] cell A reproduced the stored p_a and both printed "
+              f"orders within {REPRO_TOL} in {len(a_ok)} conversation(s) "
+              f"(read from disk, so a resumed run is still checked)")
+
+    if uncovered:
+        print(f"\n[warn] {len(uncovered)} conversation(s) have results in "
+              f"other cells with NO passing cell A on disk:")
+        for cid in uncovered[:10]:
+            print(f"    {cid} has {'/'.join(sorted(others[cid]))} but not A")
+        print("    Not an error mid-run -- running --cells D first lands "
+              "here by design. But those cells are unreadable until cell A "
+              "has run for the same conversations and passed.")
 
     # --- invalid rate, per cell -------------------------------------------
     by_cell = {}
@@ -561,6 +597,11 @@ def main():
         secs += json.load(open(f)).get("wall_secs", 0.0)
     print(f"\n[cost] {secs / 3600:.2f} h over {len(files)} cell-conversations "
           f"= {secs / 3600 * 5.3:.1f} CU")
+
+    if fatal:
+        # Deliberately last: a failed baseline still cost GPU time, and the
+        # cost line is what the next budget is built from.
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
