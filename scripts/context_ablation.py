@@ -429,6 +429,17 @@ def main():
           f"{len(pending)} to run "
           f"({sum(len(r['turns']) for r, _ in pending)} probe reads)")
 
+    def result_files(cell="[ABCD]"):
+        """Only per-(conversation, cell) results.
+
+        A bare *__<method>.json also matches d_baseline_check__<method>.json,
+        the report the cell D check writes into the same directory. That file
+        has no "cell" key, so every summary that globbed loosely crashed on it
+        -- after all 72 units had been written and paid for. The cell segment
+        is part of the name; match it.
+        """
+        return sorted(outdir.glob(f"*__{cell}__{args.method}.json"))
+
     floor = args.min_mass
     repro_fail, low_mass, t_start = [], [], time.time()
 
@@ -515,7 +526,7 @@ def main():
     # way to run this is cell D first and A B C afterwards, and because any
     # dropped session resumes into exactly this state.
     a_ok, a_bad = set(), []
-    for f in sorted(outdir.glob(f"*__A__{args.method}.json")):
+    for f in result_files("A"):
         d = json.load(open(f))
         deltas = [r["repro_delta"] for r in d["rows"] if "repro_delta" in r]
         if not deltas:
@@ -526,7 +537,7 @@ def main():
          else a_ok.add(d["conv_id"]))
 
     others = {}
-    for f in sorted(outdir.glob(f"*__{args.method}.json")):
+    for f in result_files():
         d = json.load(open(f))
         if d["cell"] != "A":
             others.setdefault(d["conv_id"], set()).add(d["cell"])
@@ -560,7 +571,7 @@ def main():
 
     # --- invalid rate, per cell -------------------------------------------
     by_cell = {}
-    for f in sorted(outdir.glob(f"*__{args.method}.json")):
+    for f in result_files():
         d = json.load(open(f))
         c = d["cell"]
         tot, bad = by_cell.get(c, (0, 0))
@@ -581,7 +592,7 @@ def main():
     # --- cell D: did it actually return to baseline? ----------------------
     if "D" in args.cells:
         d_rows, flagged, thin = [], [], []
-        for f in sorted(outdir.glob(f"*__D__{args.method}.json")):
+        for f in result_files("D"):
             d = json.load(open(f))
             cond, idx, o = d["conv_id"].split("__")
             npath = Path(args.run) / "meta" / f"neutral__{idx}__{o}.json"
@@ -661,7 +672,7 @@ def main():
                            "w"), indent=1)
 
     secs = 0.0
-    files = sorted(outdir.glob(f"*__{args.method}.json"))
+    files = result_files()
     for f in files:
         secs += json.load(open(f)).get("wall_secs", 0.0)
     print(f"\n[cost] {secs / 3600:.2f} h over {len(files)} cell-conversations "
