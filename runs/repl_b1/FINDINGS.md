@@ -284,8 +284,10 @@ has not been run, and it tests the other half of the same question: whether
 the elicitation's early crossing is itself a wording effect in the opposite
 direction. It generates 128 tokens per turn rather than running forward
 passes only, so it costs roughly ten times the probe variants, and the
-remaining compute budget is about 13 CU. (Stale as of 2026-09-07: the Colab
-Pro balance resets on monthly renewal and read 87.38 CU that day. Read the
+remaining compute budget is about 13 CU. (Stale, and it was never verified:
+the panel read 87.38 CU on 2026-09-07. Compute units expire 90 days after
+they are granted rather than resetting monthly, so this figure and that one
+do not reconcile and the "about 13" is the one with no source. Read the
 panel, not this line.)
 
 ### 7b. Where the readouts part company

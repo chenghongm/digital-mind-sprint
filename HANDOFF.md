@@ -291,10 +291,23 @@ not mixed into the arm factor. Recorded in `LADDERS_CONTROL.md`.
 ### 6c. Compute budget — undecided, and the arithmetic is unverified
 
 **Stale as of 2026-09-07 — read the Colab Resources panel, not this section.**
-The 82.65 CU below was read in late August. Colab Pro grants compute units on
-each monthly renewal and unused units expire, so the balance RESETS; it is not
-a constant to be decremented. Measured on the panel 2026-09-07: **87.38 CU**.
-`runs/repl_b1/FINDINGS.md` §7a's "about 13 CU" is stale for the same reason.
+The 82.65 CU below was read in late August. Measured on the panel
+2026-09-07: **87.38 CU**.
+
+**Correction (2026-09-08).** An earlier version of this note said the balance
+RESETS each month. That was asserted, not checked, and it is wrong in the
+direction that matters: it makes "spend it before month end" look rational.
+Google's documented rule is that compute units **expire 90 days after the
+purchase that granted them** — so unused units DO carry over between monthly
+renewals, they just do not last forever. Budget accordingly, and check the
+panel for what is actually there.
+
+What is still unexplained is the arithmetic. `runs/repl_b1/FINDINGS.md` §7a
+put the remaining budget at "about 13 CU" in late August; 13 + a month's
+grant is not 87.38. The likeliest reading is that the 13 was never right —
+like the 21.8 s/turn and the 82.65 above, it was a hand figure that no run
+recorded and no panel confirmed. Treat every CU number in this repository
+that does not name the panel and a date as an estimate.
 
 **No run has ever recorded its own cost.** schema 7 (`wall_secs`,
 `peak_gpu_gb`) landed 2026-08-27 02:28 UTC; `repl_b1_neu27`, the last run,
