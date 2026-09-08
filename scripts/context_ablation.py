@@ -56,17 +56,38 @@ comes from.
         --model {MODEL_DIR} --fill runs/repl_b1/fill \
         --out runs/repl_b1/ablation --cells A B C
 
-RESUMABLE. One JSON per (conversation, cell) under --out; an existing file is
-skipped. Worst case this run is ~4 h of wall clock, which is long enough that
-a dropped Colab session is a real cost, so re-running the same command
-continues rather than restarts -- same contract as runner.py's meta/ check.
+RESUMABLE, AND THE RESUME IS CHECKED. One JSON per (conversation, cell)
+under --out; an existing file is skipped. Worst case this run is ~4 h of wall
+clock, which is long enough that a dropped Colab session is a real cost, so
+re-running the same command continues rather than restarts.
+
+But existence is not evidence that a file answers the question being asked.
+--out is reused across filler corpora, so a file built from a different
+--fill -- or a different model, source run, topics file or mass floor --
+would be skipped and then pooled with the new results as if it belonged.
+Every skipped file is checked against cell, method, model, run, topics,
+min_mass and (where the cell replaces anything) fill_dir, plus its row count.
+A mismatch aborts and names the file. Files written before the provenance
+fields existed are noted, not refused, on whatever they do record.
+
+TURNS ARE CLASSIFIED BY CONTENT, NOT BY THE PHASE LABEL. `phase` marks the
+protocol stage, and in pressure_sustained the pushback runs straight through
+the turns labelled "release". See pressure_turn_idx; classification_report
+prints both counts before any GPU time is spent.
+
+THE CELL D CHECK USES THE ARM'S OWN CONTROL. pressure_switch is compared
+against neutral_switch, not neutral: its release turns ask
+DISTRACTOR_TEMPLATEs, and neutral asks a different question at every
+position. Conversations with no comparable release rows -- sustained under
+splice loses every non-opening turn -- are reported as NA, never as passing.
 
 --method splice (plan s3's robustness check) deletes whole (user, assistant)
 pairs to keep the alternation intact. That is only definable for cells A
 (delete nothing) and D (delete both halves). B and C remove one half of a
 turn, which under deletion leaves two consecutive same-role messages; the
 plan's own constraint -- keep the parity -- forbids it. The script refuses
-B and C under splice rather than quietly emitting something else.
+B and C under splice rather than quietly emitting something else. splice
+never opens the filler corpus, so --fill is not required for it.
 """
 
 import argparse
@@ -430,22 +451,39 @@ def main():
     # that the file answers the question this invocation is asking: --out is
     # reused across corpora, and a file built from a different --fill, or by
     # an older classification, would be silently accepted and pooled.
-    pending, stale = [], []
+    pending, stale, older = [], [], []
     for r, c in jobs:
         f = outdir / f"{r['conv_id']}__{c}__{args.method}.json"
         if not f.exists():
             pending.append((r, c))
             continue
         d = json.load(open(f))
-        want = {"cell": c, "method": args.method}
+        want = {"cell": c, "method": args.method, "model": args.model,
+                "run": args.run, "topics": args.topics,
+                "min_mass_floor": args.min_mass}
         if args.method == "replace" and not all(CELLS[c]):
             want["fill_dir"] = args.fill
-        bad = {k: (d.get(k), v) for k, v in want.items() if d.get(k) != v}
+        # Fields absent from the file predate the provenance record; compare
+        # only what is there and count the gap, rather than refusing to
+        # resume a run that is otherwise fine.
+        bad, missing = {}, []
+        for k, v in want.items():
+            if k not in d:
+                missing.append(k)
+            elif d[k] != v:
+                bad[k] = (d[k], v)
         n_rows = len(r["turns"]) if args.method == "replace" else None
         if n_rows is not None and len(d.get("rows", [])) != n_rows:
             bad["rows"] = (len(d.get("rows", [])), n_rows)
         if bad:
             stale.append((f.name, bad))
+        elif missing:
+            older.append((f.name, missing))
+    if older:
+        keys = sorted({k for _, m in older for k in m})
+        print(f"[note] {len(older)} existing file(s) predate the provenance "
+              f"record and could not be checked on: {', '.join(keys)}. "
+              f"Everything they do record matches.")
     if stale:
         print(f"[FAIL] {len(stale)} file(s) already in {outdir} do not match "
               f"this invocation:")
@@ -530,6 +568,11 @@ def main():
                    # on disk. Without this field a v1 and a v2 result are
                    # indistinguishable once they are out of their directory.
                    "method": args.method, "fill_dir": args.fill,
+                   # provenance, so resume can check that an existing file
+                   # answers THIS question. A file is skipped on the strength
+                   # of its name alone otherwise.
+                   "model": args.model, "run": args.run,
+                   "topics": args.topics,
                    "topic": rec["topic"],
                    "condition": rec["condition"],
                    "order": int(rec.get("option_order", 1)),
