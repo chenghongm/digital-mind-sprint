@@ -23,6 +23,29 @@ C_OTH = "#d62728"
 BINS = [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.01)]
 
 
+def select_source(rows, want):
+    """One figure describes one measurement.
+
+    `text_source` is part of judge.py's resume key, so one csv can legitimately
+    hold the SAME turn judged twice -- once on the reply, once on the branch
+    elicitation. Pooling them double-counts every turn and averages two
+    different measurements into one agreement figure. A csv carrying more than
+    one source therefore has to be told which one to plot.
+    """
+    srcs = sorted({r.get("text_source", "reply") for r in rows})
+    if want:
+        keep = [r for r in rows if r.get("text_source", "reply") == want]
+        if not keep:
+            raise SystemExit(f"no rows with text_source={want!r}; csv has {srcs}")
+        return keep, want
+    if len(srcs) > 1:
+        raise SystemExit(
+            f"csv mixes text sources {srcs}. The same turn can appear under "
+            f"more than one, so pooling them double-counts and mixes two "
+            f"measurements. Pass --text-source <one of {srcs}>.")
+    return rows, srcs[0] if srcs else "reply"
+
+
 def load(path):
     rows = list(csv.DictReader(open(path)))
     for r in rows:
@@ -34,7 +57,7 @@ def load(path):
     return rows
 
 
-def fig_validity(rows, outdir):
+def fig_validity(rows, outdir, source=""):
     labels, own, neu, oth, ns = [], [], [], [], []
     for lo, hi in BINS:
         sub = [r for r in rows if lo <= r["p_own"] < hi]
@@ -72,14 +95,14 @@ def fig_validity(rows, outdir):
     rho = np.corrcoef([r["p_own"] for r in dec],
                       [1.0 if r["j_own"] == "own" else 0.0 for r in dec])[0, 1]
     ax.set_title(f"blind judge vs logprob probe\n"
-                 f"sign agreement {agree:.1%} (n={len(dec)}), r = {rho:.2f}",
-                 fontsize=10)
+                 f"sign agreement {agree:.1%} (n={len(dec)}), r = {rho:.2f}\n"
+                 f"judged on: {source}", fontsize=10)
     fig.tight_layout()
     fig.savefig(outdir / "judge_validity.png", dpi=160, bbox_inches="tight")
     print(f"[fig] {outdir/'judge_validity.png'}")
 
 
-def fig_phases(rows, outdir):
+def fig_phases(rows, outdir, source=""):
     phases = ["opening", "pressure", "release"]
     holds, both, ns = [], [], []
     for p in phases:
@@ -110,8 +133,12 @@ def fig_phases(rows, outdir):
     ax.set_ylabel("share of turns")
     ax.set_ylim(0, 1.12)
     ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
-    ax.set_title("argumentative updating: conceding without yielding",
-                 fontsize=10)
+    # On `auto` the release bar is read from the branch elicitation, not
+    # from the reply -- the reply on a release turn answers a factual
+    # question and is not a stance (HANDOFF s8). The bar means a different
+    # thing under each source, so the source is on the figure.
+    ax.set_title(f"argumentative updating: conceding without yielding\n"
+                 f"judged on: {source}", fontsize=10)
     ax.legend(frameon=False, fontsize=8, loc="upper right")
     fig.tight_layout()
     fig.savefig(outdir / "judge_phases.png", dpi=160, bbox_inches="tight")
@@ -122,14 +149,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("csv", nargs="?", default="figs/judgements.csv")
     ap.add_argument("--out", default="figs")
+    ap.add_argument("--text-source", default=None,
+                    help="which measurement to plot when the csv holds more "
+                         "than one: reply | elicited | auto-mixed sources are "
+                         "refused rather than pooled")
     args = ap.parse_args()
 
     outdir = Path(args.out)
     outdir.mkdir(parents=True, exist_ok=True)
     rows = load(args.csv)
-    print(f"[load] {len(rows)} judged turns")
-    fig_validity(rows, outdir)
-    fig_phases(rows, outdir)
+    rows, source = select_source(rows, args.text_source)
+    print(f"[load] {len(rows)} judged turns, judged on {source}")
+    fig_validity(rows, outdir, source)
+    fig_phases(rows, outdir, source)
 
 
 if __name__ == "__main__":
