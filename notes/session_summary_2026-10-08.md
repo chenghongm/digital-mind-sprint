@@ -21,15 +21,18 @@
 - 2×2：A 全保留 / B 只留模型自己的回复 / C 只留用户施压消息 / D 都换成填充。
 - 只跑了三个 pressure arm，6 topic × 2 order = 36 段；|A−D| > 0.05 的 34 段
   进入 retention 计算（release 11 / sustained 12 / switch 11）。
-- FINDINGS 数字：retention B 0.62 vs C 0.12（全部）；pressure_release B 0.67 vs
-  C 0.19；B > C 30/34，sign test p = 3e-6。
+- **统一口径（2026-10-08 起）**，来自 `scripts/plot_ablation.py`：retention 中位数
+  B 0.59 vs C 0.08（全部，n = 34）；pressure_release B 0.64 vs C 0.24（n = 11）；
+  switch 0.66 / 0.11（n = 11）；sustained 0.54 / 0.03（n = 12）；B > C 31/34，
+  sign test p = 8e-7。FINDINGS §9 和 slide 5、6 已同步。旧数字（0.62/0.12、
+  0.67/0.19、30/34、p = 3e-6）没有留下脚本，已经替换。
 - **复算提示：** repo 里找不到算出 0.67/0.19 的脚本。我用三种常见聚合方式复算，
   B 在 0.54–0.68，C 在 0.03–0.26 之间，每个 arm 都是 B ≫ C。方向稳，小数点后两位
   取决于聚合方法。引用时最好写明聚合方式，或者只给到一位小数。
 - **Position control** = `ablation_splice`：整对删除，不用填充。只能做 A 和 D
   （B/C 是删半轮，会破坏 user/assistant 交替）。D 的零点在两种方法下一致
   （r = +0.866）。**B 和 C 没有 position control。**
-- 未确立：B + C = 0.74 ≠ 1；C 是"弱"不是"零"（tipping −0.49、remote_work −0.30）；
+- 未确立：B + C = 0.67 ≠ 1；C 是"弱"不是"零"（tipping −0.50、remote_work −0.28）；
   sustained 回答不了"撤压后"的问题，只能当参考；不是"模型持有立场"的证据。
 
 ## 3. Distance（FINDINGS §9b，`runs/repl_b1/distance.json`）
@@ -100,4 +103,4 @@
   找不到产生它们的脚本。方向一致：每个 arm 都是 B ≫ C。
 - C 的分布有几个很大的负值，所以 C 的**平均数接近 0**（release +0.01），中位数
   是正的。引用 C 时要说明用的是中位数。
-- Slide 5 上还是旧数字（0.67/0.19），还没改。
+- FINDINGS §9 和 slide 5、6 已经改成这套数字（统一口径）。
