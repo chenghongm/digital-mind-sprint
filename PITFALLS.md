@@ -149,6 +149,32 @@ is the SCOPE that is short. *Count the relations in the claim, count the
 comparisons in the code, and make the two numbers match before the sentence
 is written.*
 
+**17. A number quoted without its run, control and n cannot be checked.**
+Three slips in one review session, all from a figure separated from where it
+came from. The context ablation was described as "a plan" though
+`runs/repl_b1/ablation_v4` and FINDINGS §9 held the finished result. The
+distance ladder's rise (0.48 -> 0.65 retained) read as the pressure effect
+growing; split by side, the pressure readings are flat from N=2 to N=10
+(median change 0.046) and the gap grows because the control drifts back
+toward its own opening (0.065). And cell D was first compared against
+`neutral` for every arm, inventing three non-returns in `pressure_switch`
+whose matched control is `neutral_switch` (FINDINGS §9d). *Every quoted
+result carries three tags: the run directory it came from, the arm it is a
+difference against, and its n after exclusions. A gap or ratio also gets
+both sides reported, so a moving reference cannot pass as a moving effect.*
+
+---
+
+## Before quoting a result
+
+- [ ] **Run:** names the directory (`runs/...`) and file it was read from,
+      not a summary of it, and that copy is current (not one autopush behind)
+- [ ] **Control:** names the arm it is compared against, and that arm asks
+      the same question at the same position (§9d); for a gap, both sides
+      are shown
+- [ ] **n:** states the count after exclusions and what was excluded; paired
+      cells (o1/o2 of one topic) are not counted as independent
+
 ---
 
 ## Before trusting a new measurement
