@@ -830,6 +830,11 @@ several tests each, no correction for multiple comparisons, so p values near
     python3 scripts/first_person.py runs/repl_b1 \
         --judge figs/repl_b1/judgements.csv --out figs/repl_b1/first_person.csv
 
+Figure: `figs/repl_b1/first_person.png` (`scripts/plot_first_person.py`).
+Its top panels mark the median over the 12 cells (7.2 → 6.7 singular,
+3.7 → 7.7 stance), which differ from the turn means in the table above;
+same direction.
+
 ## Not established here
 
 - **The size of the switch effect.** Direction consistent, 5/6 topics, p =
