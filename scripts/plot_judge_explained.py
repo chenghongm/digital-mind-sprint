@@ -41,7 +41,10 @@ TAKEAWAY = (
     "and the paper's 83.5% does not replicate.\nNeither panel validates the "
     "probe: the elicitation answers a direct question on a discarded branch "
     "just as the probe does, so agreement there is close to expected "
-    "(FINDINGS §7)."
+    "(FINDINGS §7).\nRecords: one per turn of one conversation. Distinct "
+    "contexts: the five arms of a topic share the opening and the pressure "
+    "arms share the pressure phase word for word, so a shared turn counts "
+    "once."
 )
 
 
@@ -68,13 +71,13 @@ def panel(ax, rows, title):
     agree = np.mean([(r["p_own"] >= 0.5) == (r["j_own"] == "own")
                      for r in dec])
     # n counts records (one per conversation turn); arms share opening and
-    # pressure text, so the distinct-passage count is shown beside it
+    # pressure text, so the distinct-context count is shown beside it
     # (PITFALLS #18). Release passages differ by arm.
     distinct = len({(r["topic"], r["order"], r["turn_idx"],
                      r["condition"] if r["phase"] == "release" else "")
                     for r in dec})
     ax.set_title(f"{title}\nsign agreement {agree:.1%}  (n = {len(dec)} "
-                 f"records, {distinct} distinct passages)",
+                 f"records, {distinct} distinct contexts)",
                  fontsize=13, color=INK, loc="left")
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=10, color=INK2)
@@ -110,7 +113,7 @@ def main():
                    bbox_to_anchor=(-0.05, -0.16), ncol=3)
     fig.text(0.0, -0.13, TAKEAWAY.format(reply=a1[0], elic=a2[0]),
              fontsize=10.5, color=INK, va="top", linespacing=1.55)
-    fig.text(0.99, -0.25, f"Source: {args.csv} · scripts/plot_judge_explained.py",
+    fig.text(0.99, -0.29, f"Source: {args.csv} · scripts/plot_judge_explained.py",
              ha="right", fontsize=9, color=INK2)
     fig.savefig(args.out, dpi=160, facecolor=SURF, bbox_inches="tight")
     print(f"reply {a1[0]:.1%} n={a1[1]} | elicited {a2[0]:.1%} n={a2[1]}")
