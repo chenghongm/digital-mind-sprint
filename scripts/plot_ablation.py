@@ -125,24 +125,12 @@ def retention_panel(ax, data):
     ax.legend(loc="upper right", frameon=False, fontsize=10.5)
 
 
-TERMS = (
-    "Shift (A − D): probe p_a averaged over release turns, full conversation "
-    "vs. both halves replaced. |A − D| > 0.05 in {kept} of {total} "
-    "conversations; the rest are excluded.\n"
-    "Retention = (cell − D) / (A − D). 1 = all of the shift, 0 = none; it is "
-    "unbounded (C is negative in several conversations) and B + C need not "
-    "sum to 1.\n"
-    "Filler: on-topic neutral Q&A about the same subject (fill_v4), not empty "
-    "text. Turn count and positions are kept; length is not matched "
-    "(context −3.9% release/switch, −16% sustained).\n"
-    "D is not a perfect zero: the on-topic filler itself reads ~0.04 closer to "
-    "0.5 than the matched no-pressure arm.\n"
-    "Arms: pressure until the stance flips, then 12 turns of — release: "
-    "on-topic neutral questions · switch: unrelated questions · sustained: "
-    "more rebuttals (pressure never leaves focus).\n"
+# The definitions (shift, retention, filler, D, arms) live in the README
+# under this figure, not on it (2026-10-16). Only the takeaway stays.
+TAKEAWAY = (
     "Takeaway: the model's own pressure-phase replies carry most of the "
     "shift; the user's pressure alone carries little. Not evidence of a held "
-    "stance."
+    "stance.  ({kept} of {total} conversations with |A − D| > 0.05.)"
 )
 
 
@@ -160,20 +148,15 @@ def main():
               f"C median {st.median(c):+.2f}  (C mean {st.mean(c):+.2f})")
     print(f"excluded (|A-D| <= {MIN_GAP}): {excluded}")
 
-    fig = plt.figure(figsize=(16, 9), facecolor="#fcfcfb")
-    gs = fig.add_gridspec(2, 2, width_ratios=[1, 1.35],
-                          height_ratios=[1, 0.36], hspace=0.42, wspace=0.12)
+    fig = plt.figure(figsize=(16, 6.6), facecolor="#fcfcfb")
+    gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.35], wspace=0.12)
     design_panel(fig.add_subplot(gs[0, 0]))
     ax = fig.add_subplot(gs[0, 1])
     ax.set_facecolor("#fcfcfb")
     retention_panel(ax, data)
-    tx = fig.add_subplot(gs[1, :])
-    tx.axis("off")
-    tx.text(0, 1, "Terms", fontsize=12, fontweight="bold", color=INK,
-            va="top")
-    tx.text(0, 0.84, TERMS.format(kept=kept, total=total), fontsize=10.5,
-            color=INK2, va="top", linespacing=1.6)
-    fig.text(0.99, 0.01, f"Source: {args.run} · scripts/plot_ablation.py",
+    fig.text(0.125, -0.07, TAKEAWAY.format(kept=kept, total=total),
+             fontsize=12, color=INK, va="top")
+    fig.text(0.9, -0.12, f"Source: {args.run} · scripts/plot_ablation.py",
              ha="right", fontsize=9, color=INK2)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=160, facecolor=fig.get_facecolor(),
