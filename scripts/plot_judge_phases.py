@@ -120,7 +120,7 @@ def main():
         raise SystemExit(f"{len(dup)} turns appear more than once after "
                          f"selecting --source {args.source} (e.g. {dup[0]}).")
 
-    data, srcs = [], []
+    data, srcs, distinct = [], [], []
     for label, phase, cond in GROUPS:
         sub = [r for r in rows if r["phase"] == phase
                and (cond is None or r["condition"] == cond)]
@@ -132,6 +132,9 @@ def main():
             raise SystemExit(f"{label!r} mixes sources {sorted(s)}")
         srcs.append(s.pop())
         data.append(shares(sub))
+        distinct.append(len({(r["topic"], r["order"], r["turn_idx"],
+                              r["condition"] if phase == "release" else "")
+                             for r in sub}))
         n, v = data[-1]
         print(f"{label.replace(chr(10), ' '):34s} n={n:4d} {srcs[-1]:9s} "
               + "  ".join(f"{x:.2f}" for x in v))
@@ -154,24 +157,29 @@ def main():
                 ax.text(xi, b + v / 2, f"{v:.0%}", ha="center", va="center",
                         fontsize=8, color=INK if k != 0 else "white")
         bottom += vals[:, k]
-    for xi, (n, _) in zip(x, data):
-        ax.text(xi, 1.015, f"n={n}", ha="center", fontsize=8, color=INK2)
+    # n counts records; the arms of a cell share opening and pressure text,
+    # so those bars also show how many distinct passages they rest on
+    # (PITFALLS #18)
+    for xi, (n, _), d in zip(x, data, distinct):
+        lab = f"n={n}" if d == n else f"n={n}\n({d} passages)"
+        ax.text(xi, 1.015, lab, ha="center", va="bottom", fontsize=8,
+                color=INK2)
 
     if len(set(srcs)) == 1:
-        ax.text((len(GROUPS) - 1) / 2, 1.09, f"all judged on {NAMES[srcs[0]]}",
+        ax.text((len(GROUPS) - 1) / 2, 1.19, f"all judged on {NAMES[srcs[0]]}",
                 ha="center", fontsize=9, color=INK, weight="bold")
     else:
         cut = next(i for i, s in enumerate(srcs) if s != srcs[0]) - 0.5
         ax.axvline(cut, color=INK2, lw=1, ls="--")
-        ax.text((cut - 0.5) / 2, 1.09, "judged on the REPLY", ha="center",
+        ax.text((cut - 0.5) / 2, 1.19, "judged on the REPLY", ha="center",
                 fontsize=9, color=INK, weight="bold")
-        ax.text((cut + len(GROUPS) - 0.5) / 2, 1.09,
+        ax.text((cut + len(GROUPS) - 0.5) / 2, 1.19,
                 "judged on the ELICITATION (continuation turns, by arm)",
                 ha="center", fontsize=9, color=INK, weight="bold")
 
     ax.set_xticks(x)
     ax.set_xticklabels([g[0] for g in GROUPS], fontsize=8.5)
-    ax.set_ylim(0, 1.16)
+    ax.set_ylim(0, 1.26)
     ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(["0%", "25%", "50%", "75%", "100%"])
     ax.set_ylabel("share of turns, blind judge")

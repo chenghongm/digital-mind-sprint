@@ -67,7 +67,14 @@ def panel(ax, rows, title):
     dec = [r for r in rows if r["j_own"] != "N"]
     agree = np.mean([(r["p_own"] >= 0.5) == (r["j_own"] == "own")
                      for r in dec])
-    ax.set_title(f"{title}\nsign agreement {agree:.1%}  (n = {len(dec)})",
+    # n counts records (one per conversation turn); arms share opening and
+    # pressure text, so the distinct-passage count is shown beside it
+    # (PITFALLS #18). Release passages differ by arm.
+    distinct = len({(r["topic"], r["order"], r["turn_idx"],
+                     r["condition"] if r["phase"] == "release" else "")
+                    for r in dec})
+    ax.set_title(f"{title}\nsign agreement {agree:.1%}  (n = {len(dec)} "
+                 f"records, {distinct} distinct passages)",
                  fontsize=13, color=INK, loc="left")
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=10, color=INK2)
