@@ -146,6 +146,7 @@ text), `opening_p_a` (measurement only), `opening_flags`, `flip_rule`,
 
 | file | what it does |
 |---|---|
+| `scripts/add_canary.py` | adds the `canary` field (GUID in `canary.py`) to every JSON object under `runs/`, keeping each file's formatting. Only `runner.py` writes the field itself, because the other writers stamp `source_sha256`; run this after them. `--check` exits non-zero if any file lacks it. |
 | `scripts/check_opening_text.py` | audits the classifier over `<run>/openings/*.txt` + `screen.json`. Refuses on pre-schema-8 screens rather than reconstructing. Stamps `classifier_sha256`, `strata_sha256`, `source_sha256`. |
 | `scripts/preflight_ladders.py` | no model, no torch. Checks the ladder directions the grid will ask for against already-measured openings; **exits non-zero on a missing ladder**. Run this before every grid launch. |
 | `scripts/tof_robustness.py` | reads `rec["tof"]` and `rec["flip_rule"]`; reports `tof_mean`/`tof_o1`/`tof_o2` as counterfactuals over the rungs actually applied. |

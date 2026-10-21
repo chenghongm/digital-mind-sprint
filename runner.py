@@ -29,6 +29,7 @@ import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from canary import CANARY
 from stance_text import parse_opening_side, UNPARSED
 # Thresholds and the pre-treatment strata live in a torch-free
 # module so analysis scripts can use them without the model stack.
@@ -727,6 +728,7 @@ def save(rec, outdir):
 
     payload = {k: v for k, v in asdict(rec).items() if k != "turns"}
     payload["turns"] = [t.to_json() for t in rec.turns]
+    payload["canary"] = CANARY
     with open(outdir / "meta" / f"{rec.conv_id}.json", "w") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
