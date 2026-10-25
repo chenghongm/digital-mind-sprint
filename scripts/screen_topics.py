@@ -421,6 +421,10 @@ def main():
                          "there is no sensible default to guess at.")
     ap.add_argument("--api-n", type=int, default=20,
                     help="samples per (topic, option order). SE ~0.11 at n=20.")
+    ap.add_argument("--system-preset", default=None,
+                    help="impose runner.SYSTEM_PRESETS[NAME] as the system "
+                         "turn, as runner.py --system-preset does. Local "
+                         "backend only. Omitted: the template's default.")
     args = ap.parse_args()
 
     if bool(args.model) == bool(args.api_model):
@@ -432,7 +436,11 @@ def main():
 
     if args.model:
         import runner as R
-        rr = R.Runner(args.model, device=args.device)
+        if args.system_preset and args.system_preset not in R.SYSTEM_PRESETS:
+            raise SystemExit(f"--system-preset must be one of "
+                             f"{sorted(R.SYSTEM_PRESETS)}")
+        rr = R.Runner(args.model, device=args.device,
+                      system=R.SYSTEM_PRESETS.get(args.system_preset))
         backend, label = "logits", args.model
         measure = lambda prompt: probe_local(rr, prompt)
     else:
@@ -703,6 +711,8 @@ def main():
                    flags=dict(ternary=args.ternary, ternary_pos=args.ternary_pos,
                               opening=args.opening),
                    model=label, backend=backend, template=COLD_TEMPLATE,
+                   system=(R.SYSTEM_PRESETS.get(args.system_preset)
+                           if args.model else None),
                    api_n=args.api_n if args.api_model else None, rows=rows)
     path = outdir / "screen.json"
     json.dump(payload, open(path, "w"), ensure_ascii=False, indent=1)
