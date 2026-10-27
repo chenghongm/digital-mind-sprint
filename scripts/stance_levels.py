@@ -80,6 +80,18 @@ PHASES = ["opening", "pressure", "release"]
 EPS = 1e-6
 
 
+def read_rows(judgements, run):
+    """The judge csv's rows for <run> only. One csv can hold several runs
+    (judge.py appends per `src`), and conv_ids repeat across them, so rows
+    from another run would be matched to the wrong meta file."""
+    rows = list(csv.DictReader(open(judgements)))
+    keep = [r for r in rows if Path(r["src"]) == Path(run)]
+    if len(keep) < len(rows):
+        print(f"[src] {len(keep)} of {len(rows)} rows are from {run}; "
+              f"the rest are left out")
+    return keep
+
+
 def attach_orders(rows, run):
     """Add p_a_orders and straddles from <run>/meta/<conv_id>.json."""
     turns = {}
@@ -173,7 +185,7 @@ def main():
     ap.add_argument("--out", default="figs/repl_b1/stance_levels.csv")
     args = ap.parse_args()
 
-    rows = list(csv.DictReader(open(args.judgements)))
+    rows = read_rows(args.judgements, args.run)
     attach_orders(rows, args.run)
     out = []
     groups = defaultdict(list)
