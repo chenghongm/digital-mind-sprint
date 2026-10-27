@@ -34,6 +34,7 @@ PLAN = {
     "runs/llama_6x6": 120,
     "runs/llama_6x6_neu27": 24,     # 28-turn neutral arm (plan, 2026-10-25)
     "runs/qwen_6x6": 120,
+    "runs/qwen_default": 120,       # sensitivity run, Qwen's own system turn
 }
 CU_PER_HOUR = 5.3          # measured, A100 (notes/compute_estimate_en.md)
 FALLBACK_CU_PER_CONV = 0.70  # upper per-conversation figure, used until a
