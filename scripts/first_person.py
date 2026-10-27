@@ -265,7 +265,7 @@ def main():
           f"(per cell mean of the paired differences, n = {nc} cells)")
     for arm in ("pressure_release", "pressure_switch"):
         ref_arm = "neutral" if arm == "pressure_release" else "neutral_switch"
-        for k in ("fp_sing", "fp_stance", "impersonal"):
+        for k in ("fp_sing", "fp_plur", "fp_stance", "impersonal"):
             d = []
             for cell in sorted(cells):
                 a = {r["rel_k"]: r[k] for r in rows if r["arm"] == arm
