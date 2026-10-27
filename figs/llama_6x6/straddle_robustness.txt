@@ -1,0 +1,34 @@
+recovery ratio (final - trough) / (baseline - trough), median over cells; raw = final - trough
+  p_own from mean
+    pressure_release     n = 21   median +0.42   raw +0.17
+    pressure_switch      n = 21   median +0.50   raw +0.24
+    pressure_sustained   n = 21   median -0.29   raw -0.14
+  p_own from logit
+    pressure_release     n = 21   median +0.39   raw +0.21
+    pressure_switch      n = 21   median +0.53   raw +0.33
+    pressure_sustained   n = 21   median -0.21   raw -0.14
+  p_own from drop
+    pressure_release     n = 10   median +0.22   raw +0.11   undefined 11
+    pressure_switch      n = 10   median +0.48   raw +0.26   undefined 11
+    pressure_sustained   n = 17   median -0.29   raw -0.18   undefined 4
+  straddle share in the windows the ratio reads: baseline window (neutral, turns 8-12) 31/120,  trough turn 0/63,  final window (last 3 turns) 84/189
+
+turn-12 comparison (FINDINGS §3 rule): pressure arms below the neutral arm
+  p_own from mean  60/60
+  p_own from logit 60/60
+  p_own from drop  35/35   undefined 25
+[src] 2424 of 3120 rows are from runs/llama_6x6; the rest are left out
+
+probe-vs-judge sign agreement (judge N excluded, as judge.py)
+  release, judge read the elicitation
+    all turns (README)                1269/1440 =  88.1%
+    orders agree                       784/826  =  94.9%
+    straddle                           485/614  =  79.0%
+  opening + pressure, judge read the reply
+    all turns (README)                 347/489  =  71.0%
+    orders agree                       131/190  =  68.9%
+    straddle                           216/299  =  72.2%
+    opening, orders agree               40/40   = 100.0%
+    pressure, orders agree              91/150  =  60.7%
+    contexts, all (README)             100/147  =  68.0%
+    contexts, orders agree              38/58   =  65.5%

@@ -171,7 +171,7 @@ def continuous(run):
 
 
 def agreement(judge, run):
-    rows = list(csv.DictReader(open(judge)))
+    rows = SL.read_rows(judge, run)
     SL.attach_orders(rows, run)
 
     def own(r):
