@@ -128,6 +128,10 @@ until Qwen conversations have timing.
 | 2026-10-25 | after buying 100 CU, before any Qwen run | 146 | Qwen projected at ~69 CU (Llama's rate) plus ~3 for screen and smoke |
 | 2026-10-26 | Qwen batch 1 start (after both Qwen screens and the Qwen smoke test) | 140 | 0 spent in `runs/qwen_6x6`; batch 1 projected ~57 CU (Qwen ~13% slower per turn than Llama in the smoke tests) |
 | 2026-10-26 | Qwen batch 1 end (72 conversations, 1608 turns, 11.05 generation h, 24.7 s/turn) | 69.9 | panel says 70.1 for batch 1 (overhead 1.20), including the stuck-rebase stop and regenerated conversations; remaining: Qwen batch 2 ~34, Llama 28-turn neutral ~22, leaving ~14 |
+| 2026-10-26 | Qwen batch 2 start (after swapping in scripts/autopush.sh) | 69.48 | 0 spent in batch 2 |
+| 2026-10-26 | Qwen batch 2 end (48 conversations, 780 turns, 5.37 generation h) | 40.0 | panel says 29.5 for batch 2 (overhead 1.04); Qwen total ~100 CU. Remaining: Llama 28-turn neutral, ~672 turns at Llama's 18.5 s/turn, ~19–22 CU |
+| 2026-10-26 | Llama 28-turn neutral start, `runs/llama_6x6_neu27` (after re-downloading Llama) | 39 | re-estimated from `runs/llama_6x6` per-turn medians by turn index: ~660 s per conversation, 4.4 h, 24–30 CU |
+| 2026-10-27 | Llama 28-turn neutral end (24 conversations, 672 turns, 5.18 generation h) | 11 | panel says 28 for the 28-turn neutral (overhead 1.02); main plan (264 conversations) complete. The sensitivity run (~70 CU) needs a purchase |
 
 ## Measures (fixed now)
 
@@ -362,3 +366,13 @@ is about to skip against the settings it would have been made under, and
 stops before the model loads on any mismatch (`runner.check_out_dir`,
 `scripts/test_resume_guard.py`). All 120 `runs/llama_6x6` records pass the
 check under their own settings. Operational; no data changes.
+
+**2026-10-27: 28-turn neutral arm done; determinism check.**
+`runs/llama_6x6_neu27` holds all 24 conversations (12 topics × 2 orders),
+each 28 turns, `release_turns` 27, no system turn, the same
+`run_config.json` settings as `runs/llama_6x6` apart from the directory.
+Its turns 0–12 equal the 13-turn neutral arms of `runs/llama_6x6`
+exactly: 312 of 312 turns have identical user and model text, the probe
+values `p_a_orders` differ by 0, and the stored hidden states for those
+turns differ by 0: greedy generation reproduced exactly across Colab
+sessions. Reported with analysis D. Operational; no data changes.
