@@ -72,6 +72,8 @@ MAX_TOKENS_OPENAI = 4096
 MAX_TOKENS_GEMINI = 8192             # thinking tokens count here as well
 
 # --- Inspect, verbatim -----------------------------------------------------
+# From inspect_ai (github.com/UKGovernmentBEIS/inspect_ai), MIT License,
+# Copyright (c) 2024 UK AI Security Institute.
 DEFAULT_MODEL_GRADED_QA_TEMPLATE = """
 You are assessing a submitted answer on a given task based on a criterion. Here is the data:
 
