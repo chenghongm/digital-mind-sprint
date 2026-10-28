@@ -134,6 +134,7 @@ until Qwen conversations have timing.
 | 2026-10-27 | Llama 28-turn neutral end (24 conversations, 672 turns, 5.18 generation h) | 11 | panel says 28 for the 28-turn neutral (overhead 1.02); main plan (264 conversations) complete. The sensitivity run (~70 CU) needs a purchase |
 | 2026-10-27 | after buying 100 CU, before the sensitivity run (`runs/screen_qwen_default`, `runs/qwen_default`) | 111 | sensitivity run ~70 CU at Llama's rate plus ~1 for the screen; at Qwen's measured rate (~100 CU for `runs/qwen_6x6`) it is ~95–100 CU |
 | 2026-10-27 | sensitivity batch 1 start (after the screen) | 110 | screen ~1 CU; batch 1 projected ~60–70 CU (Qwen batch 1 on the main run: 70.1 including regenerated conversations), batch 2 ~30, leaving ~10–15 |
+| 2026-10-27 | sensitivity batch 1, 64 of 72 conversations done (10.37 generation h) | 54.9 | panel says 55.1 spent, generation estimate 55.0 (overhead 1.00); remaining 8 + 48 conversations ~37–42 CU, leaving ~13–18 |
 
 ## Measures (fixed now)
 
