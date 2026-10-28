@@ -136,6 +136,7 @@ until Qwen conversations have timing.
 | 2026-10-27 | sensitivity batch 1 start (after the screen) | 110 | screen ~1 CU; batch 1 projected ~60–70 CU (Qwen batch 1 on the main run: 70.1 including regenerated conversations), batch 2 ~30, leaving ~10–15 |
 | 2026-10-27 | sensitivity batch 1, 64 of 72 conversations done (10.37 generation h) | 54.9 | panel says 55.1 spent, generation estimate 55.0 (overhead 1.00); remaining 8 + 48 conversations ~37–42 CU, leaving ~13–18 |
 | 2026-10-28 | sensitivity batch 1 end (72 conversations, 11.15 generation h); batch 2 start | ~51 | panel says ~59 for batch 1 (overhead ~1.0); batch 2 (48 conversations) projected ~30–35, leaving ~15–20 |
+| 2026-10-28 | sensitivity batch 2 end (48 conversations, 769 turns, 5.15 generation h); sensitivity run (120) complete | 12.97 | ~38 spent on batch 2 against a generation estimate of ~27 (overhead ~1.4, against ~1.0 for batch 1; the start balance was read as "nearly 51", and runtime left connected after the run ends also counts). Sensitivity run total ~98 CU |
 
 ## Measures (fixed now)
 
