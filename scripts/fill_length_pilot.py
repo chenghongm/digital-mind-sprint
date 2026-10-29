@@ -37,6 +37,8 @@ def main():
     ap.add_argument("--group", choices=sorted(REFERENCE), required=True)
     ap.add_argument("--n-fill", type=int, default=3)
     ap.add_argument("--turns", type=int, default=5)
+    ap.add_argument("--words", type=int, nargs="+", default=[V5.WORDS],
+                    help="word counts to try, one model load for all")
     args = ap.parse_args()
 
     subjects = CA.load_subjects(args.topics)
@@ -53,7 +55,20 @@ def main():
 
     rr = R.Runner(args.model, system=CA.run_system(args.run))
     ref = REFERENCE[args.group]
-    print(f"[pilot] {V5.WORDS} words, {len(todo)} combinations x "
+    v3 = [t.replace(f"about {V5.WORDS} words", "about {words} words")
+          for t in CA.FILL_TEMPLATES]
+    summary = []
+    for words in args.words:
+        CA.FILL_TEMPLATES = [t.replace("{words}", str(words)) for t in v3]
+        summary.append((words, pilot(rr, todo, subjects, args, ref, words)))
+    print("\n[pilot] summary (first-cycle positions; the full 27-turn 200-word "
+          "corpus ran ~13% longer than its first cycle)")
+    for words, m in summary:
+        print(f"    {words:>4} words  median {m:.0f} ch  ratio {m / ref:.2f}")
+
+
+def pilot(rr, todo, subjects, args, ref, words):
+    print(f"\n[pilot] {words} words, {len(todo)} combinations x "
           f"{args.turns} turns; reference {ref} ch, accept "
           f"{LO * ref:.0f}-{HI * ref:.0f}")
     chars = []
@@ -74,6 +89,7 @@ def main():
     print(f"\n[pilot] median {m:.0f} ch, ratio {m / ref:.2f} -> "
           + ("inside" if LO <= m / ref <= HI else "OUTSIDE")
           + f" {LO}-{HI}; range {min(chars)}-{max(chars)}")
+    return m
 
 
 if __name__ == "__main__":
