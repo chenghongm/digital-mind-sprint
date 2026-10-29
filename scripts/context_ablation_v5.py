@@ -24,6 +24,10 @@ reply length does not scale with the count asked for.
     (200: the first 5 positions of fill_meta ran 2512, 1.45; the full
      27-turn corpus ran ~13% longer than its first five positions)
 
+Non-meta preview at 160 words (same pilot, 2026-10-29): median 1437 ch,
+0.73 of 1966, range 1024-2177; inside the rule, kept at 160 for both
+groups as the amendment says.
+
 Truncating the v3 replies was rejected for the reason v3 gives: a reply cut
 mid-argument is an artefact no measured arm contains. The length is asked
 for up front instead. scripts/fill_length_pilot.py checks the new count on
