@@ -457,10 +457,10 @@ artefact no arm contains).
   "about 160 words". The count comes from a pilot
   (`scripts/fill_length_pilot.py`, meta, 3 combinations × the first 5
   positions, greedy, nothing written under `runs/`): 120 words median 793
-  characters (0.46), 140 words 1036 (0.60), 160 words 1506 (0.87). The
+  characters (0.46), 140 words 1036 (0.60), 160 words 1506 (0.87), 180 words 2147 (1.24). The
   first five positions of the 200-word corpus ran 2512, and its full 27
   turns ran ~13% longer than those five, so 160 words is expected near
-  1.0 over the full corpus.
+  1.0 over the full corpus, and 180 words above the range.
 - The spread is wider than the pressure replies' (pilot p90/p10 2.2,
   against 1.43): question 2 (a term and its definition) runs ~900–1300
   characters and question 4 (where to read more) ~1950–2000, in every

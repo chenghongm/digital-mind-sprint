@@ -20,6 +20,7 @@ reply length does not scale with the count asked for.
      120       793         0.46
      140      1036         0.60
      160      1506         0.87      <- used
+     180      2147         1.24
     (200: the first 5 positions of fill_meta ran 2512, 1.45; the full
      27-turn corpus ran ~13% longer than its first five positions)
 
