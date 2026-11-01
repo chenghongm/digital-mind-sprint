@@ -142,7 +142,7 @@ def main():
                 yi += 1
         ax.set_xlim(-0.6, 0.6)
         ax.set_title(tlab, loc="left", fontsize=10, color=d2.INK, pad=8)
-        ax.set_xlabel("Spearman ρ  (95% interval, cells resampled)",
+        ax.set_xlabel("rank correlation ρ  (95% interval, cells resampled)",
                       fontsize=8.5, color=d2.INK2)
     axes[0].set_yticks(ypos)
     axes[0].set_yticklabels(ylab, fontsize=8)
@@ -157,13 +157,14 @@ def main():
     fig.text(0.01, 0.01,
              "Opening + initial-pressure replies (Llama n = 148, Qwen n = 180). "
              "pooled: raw Spearman. within cell: each (topic, order) cell's mean "
-             "removed from both axes.\nwithin cell + turn: additionally "
-             "residualised on turn position. Intervals: 2000 bootstrap draws of "
+             "removed from both axes, then Spearman.\nwithin cell + turn: partial "
+             "Spearman (ranks residualised on within-cell turn position, then "
+             "Pearson on the residuals).\nIntervals: 2000 bootstrap draws of "
              "the 24 cells per model; uncorrected for the 48 estimates shown.\n"
              "Plural first person not drawn (present in 15% of Llama / 8% of "
              "Qwen replies); its estimates are in fig2_rho_summary.csv.",
              fontsize=7.5, color=d2.INK2)
-    fig.subplots_adjust(left=0.2, right=0.98, top=0.90, bottom=0.14, wspace=0.08)
+    fig.subplots_adjust(left=0.2, right=0.98, top=0.90, bottom=0.16, wspace=0.08)
     path = os.path.join(args.out, "draft2_fig2_rho_summary.png")
     fig.savefig(path, dpi=200, facecolor=d2.SURF)
     print(f"[fig] {path}")
